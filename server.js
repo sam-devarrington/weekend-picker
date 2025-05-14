@@ -5,7 +5,7 @@ const path = require('path'); // Imports Node.js's built-in 'path' module for wo
 
 // --- Initialize Express App ---
 const app = express(); // Creates an Express application
-const port = 3000; // Defines the port number our server will listen on (you can change this if 3000 is in use)
+const port = process.env.PORT; // Defines the port number our server will listen on (you can change this if 3000 is in use)
 
 // --- Database Setup ---
 // Construct the absolute path to the database file. __dirname is a Node.js global variable that gives the directory name of the current module.
