@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekend Trip Planner</title>
+    <!-- Link to the Flatpickr CSS we copied earlier -->
+    <link rel="stylesheet" href="flatpickr.min.css">
+    <!-- Link to our custom CSS file (we'll create this next) -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Select Your Available Weekends</h1>
+
+        <form id="tripForm">
+            <div class="form-group">
+                <label for="name">Your Name:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="dates">Select Weekend Dates (Sat & Sun):</label>
+                <!-- This input will be targeted by Flatpickr -->
+                <input type="text" id="dates" placeholder="Click to select dates..." readonly>
+                <p class="info">Select your available Fridays, Saturdays, and Sundays</p>
+            </div>
+
+            <button type="submit">Submit Availability</button>
+        </form>
+
+        <!-- This div will be used to show success or error messages from JavaScript -->
+        <div id="message"></div>
+    </div>
+
+    <!-- Load Flatpickr JavaScript library (from a CDN for simplicity, or you could host it locally) -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <!-- Load our custom JavaScript file (we'll create this later) -->
+    <script src="script.js"></script>
+</body>
+</html>

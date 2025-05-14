@@ -1,0 +1,162 @@
+/* General body styling */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    margin: 0;
+    background-color: #f4f7f6; /* A light grey-green background */
+    color: #333;
+    display: flex;
+    justify-content: center; /* Horizontally center content */
+    align-items: center;    /* Vertically center content */
+    min-height: 100vh;      /* Make body at least full viewport height */
+    padding: 20px;          /* Add some padding around the content */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+/* Container for the form and responses table */
+.container {
+    background-color: #fff; /* White background for the content box */
+    padding: 25px 30px;
+    border-radius: 8px;     /* Rounded corners */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* Subtle shadow */
+    width: 100%;
+    max-width: 500px;       /* Limit the width of the form container */
+}
+
+h1 {
+    text-align: center;
+    color: #2c3e50;         /* A dark blue-grey color for heading */
+    margin-bottom: 25px;
+    font-size: 1.8em;
+}
+
+/* Styling for form groups (label + input) */
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;         /* Make label take its own line */
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #34495e;         /* A slightly lighter blue-grey */
+}
+
+input[type="text"] {
+    width: calc(100% - 22px); /* Full width minus padding and border */
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+}
+
+/* Make the date input look clickable */
+input#dates {
+    background-color: #fff !important; /* Ensure background is white, flatpickr might override */
+    cursor: pointer;
+}
+
+.info {
+    font-size: 0.9em;
+    color: #7f8c8d;         /* A grey color for informational text */
+    margin-top: 5px;
+}
+
+button[type="submit"] {
+    background-color: #3498db; /* A pleasant blue */
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%;
+    transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+}
+
+button[type="submit"]:hover {
+    background-color: #2980b9; /* Darker blue on hover */
+}
+
+/* Styling for the message div (success/error messages) */
+#message {
+    margin-top: 20px;
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+    border-radius: 4px;
+}
+
+#message.success {
+    color: #1abc9c; /* Greenish color for success */
+    background-color: #e8f8f5;
+    border: 1px solid #a3e4d7;
+}
+
+#message.error {
+    color: #e74c3c; /* Reddish color for error */
+    background-color: #fdedec;
+    border: 1px solid #f5b7b1;
+}
+
+/* Styling for the responses page table */
+.responses-container {
+    max-width: 800px; /* Allow responses table to be wider */
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse; /* Merge cell borders */
+    margin-top: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+th, td {
+    border: 1px solid #dfe6e9; /* Light grey border for table cells */
+    padding: 10px 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #f0f4f8; /* Very light blue for table headers */
+    font-weight: bold;
+    color: #34495e;
+}
+
+td {
+    background-color: #fff;
+}
+
+tr:nth-child(even) td { /* Zebra striping for table rows for readability */
+    background-color: #f9fbfd;
+}
+
+#refreshButton {
+    background-color: #2ecc71; /* Green button */
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    margin-bottom: 15px;
+    transition: background-color 0.3s ease;
+}
+
+#refreshButton:hover {
+    background-color: #27ae60; /* Darker green on hover */
+}
+
+.delete-btn {
+    background-color: #e74c3c; /* A common red color for delete/error actions */
+    color: white;              /* White text for good contrast on red */
+    border: none;              /* Remove default browser border */
+    padding: 5px 10px;         /* Some space inside the button (top/bottom, left/right) */
+    border-radius: 3px;        /* Slightly rounded corners */
+    cursor: pointer;           /* Change mouse cursor to a pointer on hover */
+    font-size: 0.9em;          /* Make font slightly smaller than normal text */
+}
+
+.delete-btn:hover {
+    background-color: #c0392b; /* A darker red when the mouse hovers over the button */
+}
