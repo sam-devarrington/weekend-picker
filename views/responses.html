@@ -9,8 +9,9 @@
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <div class="container responses-container"> <!-- Added 'responses-container' for potentially wider table -->
+    <div class="container responses-container">
         <h1>Trip Availability Responses</h1>
+
         {/* <!-- NEW SECTION FOR COMMON DATES --> */}
         <div id="commonDatesSummary" class="summary-section">
             <h2>Common Availability Summary</h2>
@@ -20,6 +21,7 @@
             </div>
         </div>
         {/* <!-- END OF NEW SECTION --> */}
+
         <button id="refreshButton">Refresh Data</button>
         <div id="responsesTableContainer">
             <p>Loading responses...</p> <!-- Initial message -->
@@ -29,189 +31,173 @@
     <script>
         // Wait for the HTML document to be fully loaded
         document.addEventListener('DOMContentLoaded', function() {
+            // Get references to DOM elements that multiple functions might use
             const responsesContainer = document.getElementById('responsesTableContainer');
             const refreshButton = document.getElementById('refreshButton');
+            const summaryContentLoading = document.getElementById('summaryContentLoading'); // Moved up for broader scope if needed
+            const summaryContentDiv = document.getElementById('summaryContent'); // Moved up
 
             // Function to fetch responses from the API and display them
             async function fetchAndDisplayResponses() {
-                responsesContainer.innerHTML = '<p>Loading responses...</p>'; // Show loading message
-                // Also show loading for summary
-                const summaryContentLoading = document.getElementById('summaryContentLoading');
-                const summaryContentDiv = document.getElementById('summaryContent');
-                summaryContentLoading.style.display = 'block';
-                summaryContentDiv.innerHTML = '';
+                // Show loading messages
+                responsesContainer.innerHTML = '<p>Loading responses...</p>';
+                if (summaryContentLoading) summaryContentLoading.style.display = 'block';
+                if (summaryContentDiv) summaryContentDiv.innerHTML = ''; // Clear previous summary
 
                 try {
-                    // Fetch data from our backend API endpoint
-                    const response = await fetch('/api/responses');
-                    if (!response.ok) { // Check for network errors or server errors
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                    const fetchResponseObject = await fetch('/api/responses'); // Renamed to avoid conflict with 'response' scope
+                    if (!fetchResponseObject.ok) {
+                        throw new Error(`HTTP error! status: ${fetchResponseObject.status}`);
                     }
-                    const responses = await response.json(); // Parse the JSON response
+                    const responsesData = await fetchResponseObject.json(); // Use 'responsesData' for the parsed array
 
-                          // --- START: Logic for Common Dates Summary ---
-        let commonDatesHTML = '';
-        if (responses.length > 0) {
-            const dateCounts = {}; // Object to store: { 'YYYY-MM-DD': { count: X, names: ['UserA', 'UserB'] } }
-            const totalUsers = responses.length;
+                    // --- START: Logic for Common Dates Summary ---
+                    let commonDatesHTML = '';
+                    if (responsesData.length > 0) {
+                        const dateCounts = {};
+                        const totalUsers = responsesData.length;
 
-            responses.forEach(r => {
-                const datesArray = r.selected_dates.split(',');
-                const uniqueDatesForThisUser = new Set(); // To count each user once per date
+                        responsesData.forEach(r => {
+                            const datesArray = r.selected_dates.split(',');
+                            const uniqueDatesForThisUser = new Set();
 
-                datesArray.forEach(dateStr => {
-                    if (!dateCounts[dateStr]) {
-                        dateCounts[dateStr] = { count: 0, names: [] };
+                            datesArray.forEach(dateStr => {
+                                if (!dateCounts[dateStr]) {
+                                    dateCounts[dateStr] = { count: 0, names: [] };
+                                }
+                                if (!uniqueDatesForThisUser.has(dateStr)) {
+                                    dateCounts[dateStr].count++;
+                                    dateCounts[dateStr].names.push(r.name);
+                                    uniqueDatesForThisUser.add(dateStr);
+                                }
+                            });
+                        });
+
+                        const sortedDates = Object.entries(dateCounts)
+                            .map(([date, data]) => ({ date, count: data.count, names: data.names }))
+                            .sort((a, b) => {
+                                if (b.count !== a.count) {
+                                    return b.count - a.count;
+                                }
+                                return new Date(a.date) - new Date(b.date);
+                            });
+
+                        if (sortedDates.length > 0) {
+                            commonDatesHTML += '<ul>';
+                            sortedDates.forEach(item => {
+                                const d = new Date(item.date + 'T00:00:00Z');
+                                const formattedDate = d.toLocaleDateString(undefined, {
+                                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                                });
+                                let classForAllUsers = '';
+                                let allUsersText = '';
+                                if (item.count === totalUsers && totalUsers > 1) {
+                                    classForAllUsers = 'all-users';
+                                    allUsersText = ' (Everyone!)';
+                                }
+                                commonDatesHTML += `<li class="date-item ${classForAllUsers}">
+                                                        <strong>${formattedDate}</strong> - Selected by ${item.count} out of ${totalUsers} user(s)${allUsersText}
+                                                        <span class="attendees-list">(${item.names.join(', ')})</span>
+                                                    </li>`;
+                            });
+                            commonDatesHTML += '</ul>';
+                        } else {
+                            commonDatesHTML = '<p>No dates selected in any responses yet to analyze for summary.</p>';
+                        }
+                    } else {
+                        commonDatesHTML = '<p>No responses submitted yet to analyze for summary.</p>';
                     }
-                    // Only increment count and add name if this user hasn't been counted for this date yet
-                    if (!uniqueDatesForThisUser.has(dateStr)) {
-                        dateCounts[dateStr].count++;
-                        dateCounts[dateStr].names.push(r.name);
-                        uniqueDatesForThisUser.add(dateStr);
-                    }
-                });
-            });
+                    if (summaryContentDiv) summaryContentDiv.innerHTML = commonDatesHTML;
+                    if (summaryContentLoading) summaryContentLoading.style.display = 'none';
+                    // --- END: Logic for Common Dates Summary ---
 
-            // Convert to an array and sort by count (descending), then by date (ascending)
-            const sortedDates = Object.entries(dateCounts)
-                .map(([date, data]) => ({ date, count: data.count, names: data.names }))
-                .sort((a, b) => {
-                    if (b.count !== a.count) {
-                        return b.count - a.count; // Sort by count descending
-                    }
-                    return new Date(a.date) - new Date(b.date); // Then by date ascending
-                });
 
-            if (sortedDates.length > 0) {
-                commonDatesHTML += '<ul>';
-                sortedDates.forEach(item => {
-                    const d = new Date(item.date + 'T00:00:00Z');
-                    const formattedDate = d.toLocaleDateString(undefined, {
-                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-                    });
-
-                    let classForAllUsers = '';
-                    let allUsersText = '';
-                    if (item.count === totalUsers && totalUsers > 1) { // Only show if more than 1 user and all selected
-                        classForAllUsers = 'all-users';
-                        allUsersText = ' (Everyone!)';
-                    }
-
-                    commonDatesHTML += `<li class="date-item ${classForAllUsers}">
-                                            <strong>${formattedDate}</strong> - Selected by ${item.count} out of ${totalUsers} user(s)${allUsersText}
-                                            <span class="attendees-list">(${item.names.join(', ')})</span>
-                                        </li>`;
-                });
-                commonDatesHTML += '</ul>';
-            } else {
-                commonDatesHTML = '<p>No dates selected in any responses yet.</p>';
-            }
-        } else {
-            commonDatesHTML = '<p>No responses submitted yet to analyze.</p>';
-        }
-        summaryContentDiv.innerHTML = commonDatesHTML;
-        summaryContentLoading.style.display = 'none';
-        // --- END: Logic for Common Dates Summary ---
-
-                    
+                    // --- Logic for the main responses table ---
                     if (responsesData.length === 0) {
                         responsesContainer.innerHTML = '<p>No responses submitted yet.</p>';
                     } else {
-                    // Start building the HTML for the table
-                    let tableHTML = `
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Name</th>
-                                    <th>Selected Dates</th>
-                                    <th>Submitted At</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                    `;
-
-                    // Loop through each response and create a table row
-                    responsesData.forEach(r => {
-                        // The 'selected_dates' from the DB is a comma-separated string.
-                        // We'll split it and format each date nicely.
-                        const formattedDates = r.selected_dates.split(',')
-                            .map(dateStr => {
-                                // Ensure correct parsing: Add 'T00:00:00' to treat as local date,
-                                // otherwise new Date() can be inconsistent with just 'YYYY-MM-DD'.
-                                const d = new Date(dateStr + 'T00:00:00Z'); // Treat as UTC, then format to local
-                                return d.toLocaleDateString(undefined, { // 'undefined' uses user's locale
-                                    weekday: 'short',
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: 'numeric'
-                                });
-                            })
-                            .join('<br>'); // Display each date on a new line within the cell
-
-                        tableHTML += `
-                            <tr>
-                                <td>${r.id}</td>
-                                <td>${r.name}</td>
-                                <td>${formattedDates}</td>
-                                <td>${r.submitted_at}</td>
-                                <td>
-                                     <button class="delete-btn" data-id="${r.id}">Delete</button>
-                                 </td>
-                            </tr>
+                        let tableHTML = `
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Selected Dates</th>
+                                        <th>Submitted At</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                         `;
+                        responsesData.forEach(r => {
+                            const formattedDates = r.selected_dates.split(',')
+                                .map(dateStr => {
+                                    const d = new Date(dateStr + 'T00:00:00Z');
+                                    return d.toLocaleDateString(undefined, {
+                                        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+                                    });
+                                })
+                                .join('<br>');
+
+                            tableHTML += `
+                                <tr>
+                                    <td>${r.id}</td>
+                                    <td>${r.name}</td>
+                                    <td>${formattedDates}</td>
+                                    <td>${r.submitted_at}</td>
+                                    <td> {/* Corrected typo: was <<td> */}
+                                        <button class="delete-btn" data-id="${r.id}">Delete</button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        tableHTML += `</tbody></table>`;
+                        responsesContainer.innerHTML = tableHTML;
+                    }
+
+                } catch (error) {
+                    console.error('Error fetching responses:', error);
+                    responsesContainer.innerHTML = '<p>Error loading responses. Check the console for details.</p>';
+                    if (summaryContentDiv && summaryContentLoading) {
+                        summaryContentDiv.innerHTML = '<p>Error loading summary. Check the console for details.</p>';
+                        summaryContentLoading.style.display = 'none';
+                    }
+                }
+            } // End of fetchAndDisplayResponses function
+
+            // Function to handle deleting a response
+            async function deleteResponse(responseId) {
+                if (!confirm(`Are you sure you want to delete response ID ${responseId}?`)) {
+                    return; // User cancelled the deletion
+                }
+                try {
+                    const deleteFetchResponse = await fetch(`/api/responses/${responseId}`, { // Renamed 'response'
+                        method: 'DELETE',
                     });
-                    tableHTML += `</tbody></table>`; // Close the table tags
-                    responsesContainer.innerHTML = tableHTML; // Insert the generated table into the div
-            }
-        } catch (error) {
-            console.error('Error fetching responses:', error);
-            // Update main table container on error
-            responsesContainer.innerHTML = '<p>Error loading responses. Check the console for details.</p>';
-        // Also update summary display on error
-            if (summaryContentDiv && summaryContentLoading) { // Check if these elements exist
-                summaryContentDiv.innerHTML = '<p>Error loading summary.</p>';
-                summaryContentLoading.style.display = 'none';
-            }
-        }    
-    }
+                    const result = await deleteFetchResponse.json(); // Use new variable name
+
+                    if (deleteFetchResponse.ok) {
+                        alert(result.message);
+                        fetchAndDisplayResponses(); // Refresh the table and summary
+                    } else {
+                        alert(result.message || 'Failed to delete response.');
+                    }
+                } catch (error) {
+                    console.error('Error deleting response:', error);
+                    alert('An error occurred while trying to delete the response.');
+                }
+            } // End of deleteResponse function
 
             // Add event listener to the refresh button
             refreshButton.addEventListener('click', fetchAndDisplayResponses);
-              // VVVV PASTE THE NEW JAVASCRIPT LOGIC HERE VVVV
-             // Function to handle deleting a response
-             async function deleteResponse(responseId) {
-                 if (!confirm(`Are you sure you want to delete response ID ${responseId}?`)) {
-                     return; // User cancelled the deletion
-                 }
 
-                 try {
-                     const response = await fetch(`/api/responses/${responseId}`, {
-                         method: 'DELETE',
-                     });
-                     const result = await response.json();
-
-                     if (response.ok) {
-                         alert(result.message); // Show success message
-                         fetchAndDisplayResponses(); // Refresh the table
-                     } else {
-                         alert(result.message || 'Failed to delete response.');
-                     }
-                 } catch (error) {
-                     console.error('Error deleting response:', error);
-                     alert('An error occurred while trying to delete the response.');
-                 }
-             }
-
-             // Add event listener for delete buttons (using event delegation)
-             responsesContainer.addEventListener('click', function(event) {
-                 if (event.target.classList.contains('delete-btn')) {
-                     const responseId = event.target.dataset.id;
-                     deleteResponse(responseId);
-                 }
-             });
-             // ^^^^ END OF PASTED JAVASCRIPT LOGIC ^^^^
+            // Add event listener for delete buttons (using event delegation)
+            responsesContainer.addEventListener('click', function(event) {
+                if (event.target.classList.contains('delete-btn')) {
+                    const responseId = event.target.dataset.id;
+                    deleteResponse(responseId);
+                }
+            });
 
             // Load data immediately when the page loads
             fetchAndDisplayResponses();
