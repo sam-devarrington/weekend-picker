@@ -9,7 +9,7 @@ const port = process.env.PORT; // Defines the port number our server will listen
 
 // --- Database Setup ---
 // Construct the absolute path to the database file. __dirname is a Node.js global variable that gives the directory name of the current module.
-const dbPath = path.resolve(__dirname, 'database.db');
+const dbPath = path.resolve('/inputdata', 'database.db');
 // Connect to (or create if it doesn't exist) the SQLite database file.
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
