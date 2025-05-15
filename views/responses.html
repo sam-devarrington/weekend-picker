@@ -11,6 +11,15 @@
 <body>
     <div class="container responses-container"> <!-- Added 'responses-container' for potentially wider table -->
         <h1>Trip Availability Responses</h1>
+        {/* <!-- NEW SECTION FOR COMMON DATES --> */}
+        <div id="commonDatesSummary" class="summary-section">
+            <h2>Common Availability Summary</h2>
+            <div id="summaryContentLoading">Loading summary...</div>
+            <div id="summaryContent">
+                {/* <!-- Summary will be injected here by JavaScript --> */}
+            </div>
+        </div>
+        {/* <!-- END OF NEW SECTION --> */}
         <button id="refreshButton">Refresh Data</button>
         <div id="responsesTableContainer">
             <p>Loading responses...</p> <!-- Initial message -->
@@ -26,6 +35,12 @@
             // Function to fetch responses from the API and display them
             async function fetchAndDisplayResponses() {
                 responsesContainer.innerHTML = '<p>Loading responses...</p>'; // Show loading message
+                // Also show loading for summary
+                const summaryContentLoading = document.getElementById('summaryContentLoading');
+                const summaryContentDiv = document.getElementById('summaryContent');
+                summaryContentLoading.style.display = 'block';
+                summaryContentDiv.innerHTML = '';
+
                 try {
                     // Fetch data from our backend API endpoint
                     const response = await fetch('/api/responses');
@@ -34,11 +49,74 @@
                     }
                     const responses = await response.json(); // Parse the JSON response
 
-                    if (responses.length === 0) {
-                        responsesContainer.innerHTML = '<p>No responses submitted yet.</p>';
-                        return;
+                          // --- START: Logic for Common Dates Summary ---
+        let commonDatesHTML = '';
+        if (responses.length > 0) {
+            const dateCounts = {}; // Object to store: { 'YYYY-MM-DD': { count: X, names: ['UserA', 'UserB'] } }
+            const totalUsers = responses.length;
+
+            responses.forEach(r => {
+                const datesArray = r.selected_dates.split(',');
+                const uniqueDatesForThisUser = new Set(); // To count each user once per date
+
+                datesArray.forEach(dateStr => {
+                    if (!dateCounts[dateStr]) {
+                        dateCounts[dateStr] = { count: 0, names: [] };
+                    }
+                    // Only increment count and add name if this user hasn't been counted for this date yet
+                    if (!uniqueDatesForThisUser.has(dateStr)) {
+                        dateCounts[dateStr].count++;
+                        dateCounts[dateStr].names.push(r.name);
+                        uniqueDatesForThisUser.add(dateStr);
+                    }
+                });
+            });
+
+            // Convert to an array and sort by count (descending), then by date (ascending)
+            const sortedDates = Object.entries(dateCounts)
+                .map(([date, data]) => ({ date, count: data.count, names: data.names }))
+                .sort((a, b) => {
+                    if (b.count !== a.count) {
+                        return b.count - a.count; // Sort by count descending
+                    }
+                    return new Date(a.date) - new Date(b.date); // Then by date ascending
+                });
+
+            if (sortedDates.length > 0) {
+                commonDatesHTML += '<ul>';
+                sortedDates.forEach(item => {
+                    const d = new Date(item.date + 'T00:00:00Z');
+                    const formattedDate = d.toLocaleDateString(undefined, {
+                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                    });
+
+                    let classForAllUsers = '';
+                    let allUsersText = '';
+                    if (item.count === totalUsers && totalUsers > 1) { // Only show if more than 1 user and all selected
+                        classForAllUsers = 'all-users';
+                        allUsersText = ' (Everyone!)';
                     }
 
+                    commonDatesHTML += `<li class="date-item ${classForAllUsers}">
+                                            <strong>${formattedDate}</strong> - Selected by ${item.count} out of ${totalUsers} user(s)${allUsersText}
+                                            <span class="attendees-list">(${item.names.join(', ')})</span>
+                                        </li>`;
+                });
+                commonDatesHTML += '</ul>';
+            } else {
+                commonDatesHTML = '<p>No dates selected in any responses yet.</p>';
+            }
+        } else {
+            commonDatesHTML = '<p>No responses submitted yet to analyze.</p>';
+        }
+        summaryContentDiv.innerHTML = commonDatesHTML;
+        summaryContentLoading.style.display = 'none';
+        // --- END: Logic for Common Dates Summary ---
+
+                    
+                    if (responsesData.length === 0) {
+                        responsesContainer.innerHTML = '<p>No responses submitted yet.</p>';
+                    } else {
                     // Start building the HTML for the table
                     let tableHTML = `
                         <table>
@@ -55,7 +133,7 @@
                     `;
 
                     // Loop through each response and create a table row
-                    responses.forEach(r => {
+                    responsesData.forEach(r => {
                         // The 'selected_dates' from the DB is a comma-separated string.
                         // We'll split it and format each date nicely.
                         const formattedDates = r.selected_dates.split(',')
@@ -78,21 +156,26 @@
                                 <td>${r.name}</td>
                                 <td>${formattedDates}</td>
                                 <td>${r.submitted_at}</td>
-                                <<td>
+                                <td>
                                      <button class="delete-btn" data-id="${r.id}">Delete</button>
                                  </td>
                             </tr>
                         `;
                     });
-
                     tableHTML += `</tbody></table>`; // Close the table tags
                     responsesContainer.innerHTML = tableHTML; // Insert the generated table into the div
-
-                } catch (error) {
-                    console.error('Error fetching responses:', error);
-                    responsesContainer.innerHTML = '<p>Error loading responses. Check the console for details.</p>';
-                }
             }
+        } catch (error) {
+            console.error('Error fetching responses:', error);
+            // Update main table container on error
+            responsesContainer.innerHTML = '<p>Error loading responses. Check the console for details.</p>';
+        // Also update summary display on error
+            if (summaryContentDiv && summaryContentLoading) { // Check if these elements exist
+                summaryContentDiv.innerHTML = '<p>Error loading summary.</p>';
+                summaryContentLoading.style.display = 'none';
+            }
+        }    
+    }
 
             // Add event listener to the refresh button
             refreshButton.addEventListener('click', fetchAndDisplayResponses);

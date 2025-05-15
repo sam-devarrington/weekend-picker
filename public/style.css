@@ -160,3 +160,46 @@ tr:nth-child(even) td { /* Zebra striping for table rows for readability */
 .delete-btn:hover {
     background-color: #c0392b; /* A darker red when the mouse hovers over the button */
 }
+.summary-section {
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.summary-section h2 {
+    margin-top: 0;
+    color: #333;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+    font-size: 1.4em;
+}
+
+.summary-section ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.summary-section li {
+    padding: 8px 0;
+    border-bottom: 1px dashed #eee;
+}
+.summary-section li:last-child {
+    border-bottom: none;
+}
+
+.summary-section .date-item strong {
+    display: inline-block;
+    min-width: 150px; /* Adjust as needed for date format */
+}
+
+.summary-section .all-users {
+    font-weight: bold;
+    color: #27ae60; /* Green for dates everyone selected */
+}
+.summary-section .attendees-list {
+    font-size: 0.9em;
+    color: #555;
+    margin-left: 10px;
+}
